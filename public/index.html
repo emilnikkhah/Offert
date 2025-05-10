@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offerthantering - Offertprogram</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <img src="img/logo.png" alt="Företagslogotyp" id="headerLogo">
+
+        <nav>
+            <a href="index.html" style="margin-right: 15px; color: #ecf0f1;">Offerter</a>
+            <a href="kunder.html" style="margin-right: 15px; color: #ecf0f1;">Kunder</a>
+            <a href="artiklar.html" style="margin-right: 15px; color: #ecf0f1;">Artiklar</a>
+            <a href="profil.html" style="color: #ecf0f1; margin-right: 15px;">Profil</a>
+            <a href="#" id="logoutBtn" style="color: #ecf0f1;">Logga ut</a>
+        </nav>
+    </header>
+    
+    <main>
+        <section id="offerthantering">
+            <h2>Offerthantering</h2>
+
+            <button type="button" id="showAddQuoteFormBtn" style="margin-bottom: 20px;">Skapa ny offert</button>
+
+            <form id="addQuoteForm" style="display: none;">
+                <h3 id="quoteFormTitle">Skapa ny offert</h3>
+                
+                <div class="form-section-group">
+                    <div class="form-grid three-columns"> 
+                        <div class="quote-number-group" style="grid-column: span 1;">
+                            <label for="quote_number">Offertnummer:</label>
+                            <input type="text" id="quote_number" name="quote_number" required>
+                            <button type="button" id="suggestQuoteNumberBtn" title="Föreslå nytt offertnummer">🔄</button>
+                        </div>
+                        <div>
+                            <label for="quote_date">Offertdatum:</label>
+                            <input type="date" id="quote_date" name="quote_date" required>
+                        </div>
+                        <div>
+                            <label for="valid_until_date">Giltig t.o.m.:</label>
+                            <input type="date" id="valid_until_date" name="valid_until_date">
+                        </div>
+                    </div>
+                    <div class="form-grid three-columns" style="margin-top: 0.8rem;"> 
+                        <div>
+                            <label for="quote_customer_id">Kund:</label>
+                            <select id="quote_customer_id" name="customer_id" required>
+                                <option value="">-- Välj kund --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="production_name">Produktion/Projekt:</label>
+                            <input type="text" id="production_name" name="production_name">
+                        </div>
+                        <div>
+                            <label for="quote_status">Status:</label>
+                            <select id="quote_status" name="status">
+                                <option value="Utkast">Utkast</option>
+                                <option value="Skickad">Skickad</option>
+                                <option value="Accepterad">Accepterad</option>
+                                <option value="Avvisad">Avvisad</option>
+                                <option value="Arkiverad">Arkiverad</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section-group">
+                    <div class="form-grid two-columns">
+                        <div>
+                            <label for="payment_terms">Betalningsvillkor:</label>
+                            <input type="text" id="payment_terms" name="payment_terms" value="30 dagar netto">
+                        </div>
+                        <div>
+                            <label for="delivery_terms">Leveransvillkor:</label>
+                            <input type="text" id="delivery_terms" name="delivery_terms" value="Enligt överenskommelse">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section-group">
+                    <label for="internal_notes">Anteckningar:</label> 
+                    <textarea id="internal_notes" name="internal_notes" rows="2"></textarea>
+                </div>
+
+                <h4>Offertrader</h4>
+                <div class="quote-item-form-header">
+                    <div class="qitem-header-cell article">Artikel</div>
+                    <div class="qitem-header-cell description">Beskrivning</div>
+                    <div class="qitem-header-cell quantity">Antal</div>
+                    <div class="qitem-header-cell unit">Enhet</div>
+                    <div class="qitem-header-cell price">Á-pris</div>
+                    <div class="qitem-header-cell discount">Rabatt %</div>
+                    <div class="qitem-header-cell total">Summa</div>
+                    <div class="qitem-header-cell action"></div>
+                </div>
+                <div id="quoteItemsContainer">
+                </div>
+                <button type="button" id="addQuoteItemBtn">Lägg till rad</button>
+                <hr style="margin: 15px 0;">
+                
+                <div class="form-grid three-columns">
+                    <div>
+                        <label for="total_amount_excl_vat">Totalsumma (exkl. moms):</label>
+                        <input type="number" id="total_amount_excl_vat" name="total_amount_excl_vat" readonly step="0.01">
+                    </div>
+                     <div>
+                        <label for="vat_percentage">Momssats (%):</label>
+                        <input type="number" id="vat_percentage" name="vat_percentage" value="25" step="0.01">
+                    </div>
+                    <div>
+                        <label for="total_amount_incl_vat">Totalsumma (inkl. moms):</label>
+                        <input type="number" id="total_amount_incl_vat" name="total_amount_incl_vat" readonly step="0.01">
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <button type="submit">Spara offert</button>
+                </div>
+            </form>
+            
+            <hr id="formListSeparator" style="display: none;">
+
+            <div id="quoteListContainer">
+                <h3>Befintliga offerter</h3>
+                
+                <div id="quoteFilters">
+                    <div class="filter-group">
+                        <label for="filterStatus">Status:</label>
+                        <select id="filterStatus" name="filterStatus">
+                            <option value="">Alla statusar</option>
+                            <option value="Utkast">Utkast</option>
+                            <option value="Skickad">Skickad</option>
+                            <option value="Accepterad">Accepterad</option>
+                            <option value="Avvisad">Avvisad</option>
+                            <option value="Arkiverad">Arkiverad</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterCustomerName">Kund:</label>
+                        <input type="text" id="filterCustomerName" name="filterCustomerName" placeholder="Kundnamn...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterProductionName">Produktion:</label>
+                        <input type="text" id="filterProductionName" name="filterProductionName" placeholder="Produktion/Projekt...">
+                    </div>
+                </div>
+
+                <div class="quote-list-header">
+                    <div class="quote-header-cell">Offertnr</div>
+                    <div class="quote-header-cell">Status</div>
+                    <div class="quote-header-cell">Kund</div>
+                    <div class="quote-header-cell">Produktion</div>
+                    <div class="quote-header-cell">Offertdatum</div>
+                    <div class="quote-header-cell">Giltig t.o.m.</div>
+                    <div class="quote-header-cell">Summa (ex. moms)</div>
+                    <div class="quote-header-cell">Åtgärder</div>
+                </div>
+                <ul id="quoteList">
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Mitt Offertprogram</p>
+        <div style="margin-top: 10px;">
+            <button type="button" id="backupDbBtn">Ta backup på databas</button>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script>
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async (event) => {
+                event.preventDefault();
+                try {
+                    const response = await fetch('/logout', { 
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.redirectUrl) {
+                        window.location.href = result.redirectUrl;
+                    } else {
+                        alert(result.error || 'Kunde inte logga ut. Försök igen.');
+                    }
+                } catch (error) {
+                    console.error('Utloggningsfel:', error);
+                    alert('Ett fel uppstod vid utloggning. Försök igen.');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

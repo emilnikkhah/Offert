@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Offert {{quote.quote_number}}</title>
+    <style>
+        /* Bas-styling för PDF-mallen */
+        body {
+            font-family: "Liberation Sans", Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+            color: #000000; /* Primär text */
+            background-color: #FFFFFF;
+            margin: 0; /* Tas bort för att Puppeteer ska styra via @page */
+        }
+
+        @page {
+            size: A4 portrait;
+            margin-top: 35mm;
+            margin-bottom: 0mm; /* Satt till 0 för att fixed footer ska nå papperskanten */
+            margin-left: 25mm;
+            margin-right: 25mm;
+        }
+        
+        .pdf-page-container {
+            width: 100%;
+            height: 100%;
+            padding: 0; /* Padding styrs av @page marginaler */
+            display: flex; /* För att kunna positionera terms-notes längst ner */
+            flex-direction: column; /* Stapla innehåll vertikalt */
+        }
+
+        .content-that-grows {
+            flex-grow: 1; /* Denna div tar upp allt tillgängligt utrymme */
+        }
+
+        .header-section {
+            /* Ingen specifik positionering här, låt innehållet flöda */
+            margin-bottom: 20pt; /* Avstånd efter header-innehåll */
+        }
+
+        .logo-container {
+            text-align: center; /* Eller left om svagt vänsterställd föredras */
+            margin-bottom: 20pt; /* Avstånd under logotyp */
+        }
+
+        .logo-container img {
+            max-width: 40%; /* Skalar ner 902px till ca 360px, justera efter behov */
+            height: auto;
+        }
+
+        .top-columns {
+            display: grid;
+            grid-template-columns: 63fr 37fr; /* Cirka 63% / 37% */
+            gap: 20pt;
+            align-items: flex-end; /* Försök linjera botten av meta-info med "OFFERT\"-rubrik */
+        }
+
+        .meta-info {
+            /* margin-top: 70pt; - Detta kan vara svårt att pricka exakt med dynamiskt header-innehåll */
+        }
+
+        .meta-info p {
+            margin: 0 0 2pt 0;
+            line-height: 1.3; /* Något mer än 2pt spacing, justera vid behov */
+        }
+
+        .meta-info .label {
+            font-weight: normal; /* Liberation Sans Regular */
+            font-size: 10pt;
+        }
+
+        .meta-info .value {
+            font-weight: bold; /* Liberation Sans Bold */
+            font-size: 11pt;
+        }
+
+        .quote-title-section {
+            text-align: right;
+        }
+
+        .quote-title-section h1 {
+            font-family: "Liberation Sans Bold", Arial, Helvetica, sans-serif;
+            font-weight: bold;
+            font-size: 24pt;
+            color: #000000;
+            margin: 0;
+            padding: 0;
+            line-height: 1; /* För att undvika extra luft runt stor text */
+        }
+        
+        .quote-validity-fskatt {
+            font-size: 9pt;
+            text-align: right;
+            margin-top: 5pt;
+            color: #999999; /* Sekundär/grå text */
+        }
+        .quote-validity-fskatt p {
+            margin: 0 0 2pt 0;
+        }
+
+        .customer-addresses {
+            margin-top: 15pt; /* Avstånd från meta-info */
+            margin-bottom: 18pt; /* Avstånd före tabell (320pt - header etc) */
+        }
+        .customer-addresses .address-block {
+            margin-bottom: 6pt;
+        }
+         .customer-addresses strong {
+            font-weight: bold;
+         }
+
+        .production-title {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-top: 20pt;
+            margin-bottom: 10pt;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18pt;
+            margin-bottom: 12pt;
+            font-size: 10pt; /* Basstorlek för tabellinnehåll */
+            line-height: 1.1; /* 110% */
+        }
+
+        .items-table th,
+        .items-table td {
+            border-bottom: 1px solid #999999; /* Horisontella linjer */
+            padding: 6pt 4pt; /* Justerad padding, ca 4pt ovan/under */
+            text-align: left;
+            vertical-align: top;
+        }
+        .items-table th {
+            font-family: "Liberation Sans Bold", Arial, Helvetica, sans-serif;
+            font-weight: bold;
+            font-size: 10pt; /* Tabellhuvud */
+            background-color: transparent; /* Ingen bakgrundsfärg på th för renare look */
+            border-bottom-width: 2px; /* Tydligare linje under rubriker */
+        }
+        .items-table tr:last-child td {
+             border-bottom: 2px solid #999999; /* Tydligare linje efter sista raden */
+        }
+
+        /* Kolumnbredder för offertrader */
+        .items-table .col-description { width: 48%; } /* Benämning (justerat för enhet) */
+        .items-table .col-quantity   { width: 8%; text-align: right; }
+        .items-table .col-unit       { width: 8%; }
+        .items-table .col-unitprice  { width: 13%; text-align: right; }
+        .items-table .col-discount   { width: 10%; text-align: right; }
+        .items-table .col-line-total { width: 13%; text-align: right; }
+
+        .items-table .item-description { white-space: pre-wrap; } /* Behåll radbrytningar */
+
+
+        .totals-summary {
+            margin-top: 20pt;
+            display: flex;
+            justify-content: flex-end; /* Högerställ hela blocket */
+        }
+
+        .totals-table {
+            width: 45%; /* Bredd på totalrutan */
+            font-size: 10pt;
+        }
+        .totals-table td {
+            padding: 3pt 0;
+            border: none;
+        }
+        .totals-table td:first-child { text-align: left; font-weight: normal; }
+        .totals-table td:last-child { text-align: right; font-weight: bold; }
+        .totals-table tr.grand-total td {
+            font-family: "Liberation Sans Bold", Arial, Helvetica, sans-serif;
+            font-weight: bold;
+            font-size: 11pt; /* Lite större för totalsumman */
+            border-top: 1px solid #000000; /* Svart linje över totalsumma */
+            padding-top: 5pt;
+        }
+
+        .terms-notes {
+            margin-top: 25pt; /* Behålls för lite luft om content-that-grows är tomt, kan justeras */
+            line-height: 1.2; /* 120% */
+        }
+        .terms-notes p {
+            margin: 0 0 6pt 0;
+        }
+
+        .disclaimers {
+            margin-top: 12pt;
+            font-size: 10pt;
+            color: #999999;
+            line-height: 1.2;
+        }
+
+        .signature-section {
+            margin-top: 30pt;
+            /* Ingen specifik kolumn här, placeras före sidfotens firmainfo */
+        }
+        .signature-section p {
+            font-size: 10pt;
+            /* Kursivt utseende via font-style om typsnittet stödjer det, annars kan det vara svårt i PDF utan rätt font-fil */
+            /* font-style: italic; */ 
+            margin: 0;
+        }
+
+        .pdf-footer {
+            font-size: 8pt;
+            color: #555;
+            width: 100%;
+            position: fixed; /* Försöker få den i botten av varje sida */
+            bottom: 5mm; /* Lyft 5mm från papperskanten */
+            left: 0; /* Sträcker sig till sidans kanter */
+            right: 0; /* Sträcker sig till sidans kanter */
+            /* padding-left och padding-right borttagna så att innehållet kan använda hela bredden mellan sidmarginalerna */
+            box-sizing: border-box; /* För bättre kontroll av padding och width/height */
+            border-top: 1px solid #999999; /* Linje över hela bredden */
+            padding-top: 8pt; /* Avstånd mellan linje och text */
+        }
+        .footer-columns {
+            display: flex; /* Använd flexbox för att positionera kolumnerna */
+            justify-content: space-between; /* Maximerar avståndet mellan kolumnerna */
+            /* grid-template-columns och gap behövs inte längre */
+            /* border-top och padding-top har flyttats till .pdf-footer */
+        }
+        .footer-columns div p {
+            margin: 0 0 4pt 0; /* Mindre marginal i sidfoten */
+        }
+
+        @media screen { /* Stilar endast för skärmvisning (Preview) */
+            body {
+                 background-color: #e0e0e0; /* Ge en bakgrundsfärg så man ser \"pappret\" */
+            }
+            .web-preview-wrapper {
+                max-width: 210mm; /* A4 bredd */
+                min-height: 297mm; /* A4 höjd (ungefärlig, för visuell feedback) */
+                margin: 20px auto; /* Centrera på sidan med lite marginal */
+                padding: 25mm; /* Simulerar sidmarginalerna från @page */
+                background-color: #ffffff; /* Vitt \"papper\" */
+                box-shadow: 0 0 10px rgba(0,0,0,0.5); /* Skugga för djup */
+                box-sizing: border-box; /* Inkludera padding i max-width */
+                display: flex; /* För att kunna trycka ner sidfoten */
+                flex-direction: column; /* Stapla innehåll och sidfot vertikalt */
+                justify-content: space-between; /* Tryck ner sidfoten */
+            }
+
+            /* Åsidosätt fixed position för footer i webb-preview för att den ska flöda normalt */
+            .pdf-footer {
+                position: static; 
+                padding-left: 0; /* Nollställ padding som sattes för fixed PDF-footer */
+                padding-right: 0;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="web-preview-wrapper"> <!-- NYTT -->
+        <div class="pdf-page-container">
+            <div class="content-that-grows"> <!-- NYTT OMSLUTANDE ELEMENT -->
+                <div class="header-section">
+                    <div class="logo-container">
+                        {{#if companyProfile.logo_path}}
+                            <img src="{{companyProfile.logo_path_full}}" alt="Företagslogotyp">
+                        {{else}}
+                            <!-- <p style=\"font-size: 20px; font-weight: bold;\">{{companyProfile.company_name}}</p> --> <!-- Alternativ om ingen logga -->
+                        {{/if}}
+                    </div>
+
+                    <div class="top-columns">
+                        <div class="meta-info">
+                            <p><span class="label">Offertdatum:</span> <span class="value">{{formatted_quote_date}}</span></p>
+                            <p><span class="label">Offertnummer:</span> <span class="value">{{quote.quote_number}}</span></p>
+                            {{#if quote.production_name}}
+                                <p><span class="label">Referens/Projekt:</span> <span class="value">{{quote.production_name}}</span></p>
+                            {{/if}}
+                        </div>
+                        <div class="quote-title-section">
+                            <h1>OFFERT</h1>
+                            <div class="quote-validity-fskatt">
+                                {{#if formatted_valid_until_date}}
+                                    <p>Offert giltig till: {{formatted_valid_until_date}}</p>
+                                {{/if}}
+                                {{#if companyProfile.f_skatt_text}}
+                                     <p>{{companyProfile.f_skatt_text}}</p> <!-- t.ex. \"Godkänd för F-skatt\" -->
+                                {{/if}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="customer-addresses">
+                    <div class="address-block">
+                        <strong>{{quote.customer_company_name}}</strong><br>
+                        {{#if quote.customer_contact_person}}{{quote.customer_contact_person}}<br>{{/if}}
+                        {{quote.customer_address}}<br>
+                        {{quote.customer_postal_code}} {{quote.customer_city}}
+                    </div>
+                    <!-- Här kan en separat leveransadress läggas till om det finns data för det -->
+                </div>
+
+        {{#if quote.production_name}}
+            <p class="production-title">Produktion: {{quote.production_name}}</p>
+        {{/if}}
+        {{#if quote.internal_notes}}
+            <p style="margin-top:10pt; margin-bottom:10pt;"><strong>Anteckningar:</strong><br>{{{quote.internal_notes_formatted}}}</p>
+        {{/if}}
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th class="col-description">Beskrivning</th>
+                            <th class="col-quantity">Antal</th>
+                            <th class="col-unit">Enhet</th>
+                            <th class="col-unitprice">Á-pris</th>
+                            <th class="col-discount\">Rabatt</th>
+                            <th class="col-line-total">Summa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each quote.items}}
+                        <tr>
+                            <td class="item-description\">{{{description}}}</td>
+                            <td class="col-quantity">{{quantity_formatted}}</td>
+                            <td class="col-unit">{{unit}}</td>
+                            <td class="col-unitprice">{{unit_price_formatted}}</td>
+                            <td class="col-discount">{{discount_display}}</td>
+                            <td class="col-line-total">{{line_total_formatted}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+
+                <div class="totals-summary">
+                    <table class="totals-table">
+                        <tr>
+                            <td>Delsumma (exkl. moms):</td>
+                            <td>{{total_amount_excl_vat_formatted}}</td>
+                        </tr>
+                        <tr>
+                            <td>Moms ({{quote.vat_percentage}}%):</td>
+                            <td>{{vat_amount_formatted}}</td>
+                        </tr>
+                        <tr class="grand-total">
+                            <td>Att betala:</td>
+                            <td>{{total_amount_incl_vat_formatted_with_sek}}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div> <!-- SLUT PÅ content-that-grows -->
+
+            <div class="terms-notes">
+                {{#if quote.payment_terms}}<p><strong>Betalningsvillkor:</strong> {{quote.payment_terms}}</p>{{/if}}
+                {{#if quote.delivery_terms}}<p><strong>Leveransvillkor:</strong> {{quote.delivery_terms}}</p>{{/if}}
+            </div>
+            
+            {{#if companyProfile.signature_text}}
+            <div class="signature-section">
+                <p>Med vänliga hälsningar,</p>
+                <p style="margin-top: 20pt;\">{{companyProfile.signature_text}}</p>
+            </div>
+            {{/if}}
+        </div>
+        <!-- pdf-page-container stängs här ovan -->
+
+        <div class="pdf-footer"> <!-- Flyttad utanför pdf-page-container för bättre hantering i preview -->
+            <div class="footer-columns">
+                <div>
+                    <p><strong>{{companyProfile.company_name}}</strong></p>
+                    <p>{{companyProfile.address_line1}}</p>
+                    <p>{{companyProfile.postal_code}} {{companyProfile.city}}</p>
+                    <p>Org.nr: {{companyProfile.org_number}}</p>
+                    <p>Momsreg.nr: {{companyProfile.vat_number}}</p>
+                </div>
+                <div>
+                    <p>Tel: {{companyProfile.phone}}</p>
+                    <p>E-post: {{companyProfile.email}}</p>
+                    <p>Webb: {{companyProfile.website}}</p>
+                    <p>Bankgiro: {{companyProfile.bankgiro}}</p>
+                    {{#if companyProfile.iban}}<p>IBAN: {{companyProfile.iban}}</p>{{/if}}
+                    {{#if companyProfile.bic_swift}}<p>BIC/SWIFT: {{companyProfile.bic_swift}}</p>{{/if}}
+                </div>
+            </div>
+        </div>
+    </div> <!-- web-preview-wrapper stängs här -->
+</body>
+</html>

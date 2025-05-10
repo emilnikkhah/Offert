@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Företagsprofil - Offertprogram</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <img src="img/logo.png" alt="Företagslogotyp" id="headerLogo">
+        <h1>Offertprogram</h1>
+        <nav>
+            <a href="index.html" style="margin-right: 15px; color: #ecf0f1;">Offerter</a>
+            <a href="kunder.html" style="margin-right: 15px; color: #ecf0f1;">Kunder</a>
+            <a href="artiklar.html" style="margin-right: 15px; color: #ecf0f1;">Artiklar</a>
+            <a href="profil.html" style="color: #ecf0f1; margin-right: 15px;">Profil</a>
+            <a href="#" id="logoutBtn" style="color: #ecf0f1;">Logga ut</a>
+        </nav>
+    </header>
+    
+    <main>
+        <section id="profilhantering">
+            <h2>Företagsprofil</h2>
+            <form id="companyProfileForm">
+                <div class="form-section-group">
+                    <h4>Grundläggande information</h4>
+                    <div class="form-grid two-columns">
+                        <div>
+                            <label for="company_name">Företagsnamn:</label>
+                            <input type="text" id="company_name" name="company_name">
+                        </div>
+                        <div>
+                            <label for="org_number">Organisationsnr.:</label>
+                            <input type="text" id="org_number" name="org_number">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section-group">
+                    <h4>Adressinformation</h4>
+                    <div class="form-grid two-columns">
+                        <div>
+                            <label for="address_line1">Adress:</label>
+                            <input type="text" id="address_line1" name="address_line1">
+                        </div>
+                        <div>
+                            <label for="postal_code">Postnummer:</label>
+                            <input type="text" id="postal_code" name="postal_code">
+                        </div>
+                        <div>
+                            <label for="city">Ort:</label>
+                            <input type="text" id="city" name="city">
+                        </div>
+                        <div>
+                            <label for="country">Land:</label>
+                            <input type="text" id="country" name="country">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section-group">
+                    <h4>Kontaktinformation</h4>
+                    <div class="form-grid two-columns">
+                        <div>
+                            <label for="phone">Telefon:</label>
+                            <input type="text" id="phone" name="phone">
+                        </div>
+                        <div>
+                            <label for="email">E-post:</label>
+                            <input type="email" id="email" name="email">
+                        </div>
+                        <div>
+                            <label for="website">Webbsida:</label>
+                            <input type="text" id="website" name="website">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section-group">
+                    <h4>Ekonomisk information</h4>
+                    <div class="form-grid two-columns">
+                        <div>
+                            <label for="vat_number">Momsreg.nr (VAT):</label>
+                            <input type="text" id="vat_number" name="vat_number">
+                        </div>
+                        <div>
+                            <label for="bankgiro">Bankgiro:</label>
+                            <input type="text" id="bankgiro" name="bankgiro">
+                        </div>
+                        <div>
+                            <label for="iban">IBAN:</label>
+                            <input type="text" id="iban" name="iban">
+                        </div>
+                        <div>
+                            <label for="bic_swift">BIC (SWIFT):</label>
+                            <input type="text" id="bic_swift" name="bic_swift">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section-group">
+                    <h4>PDF-inställningar & Övrigt</h4>
+                     <div class="form-grid two-columns">
+                        <div>
+                            <label for="logo_path">Sökväg till logotyp (t.ex. public/img/logo.png):</label>
+                            <input type="text" id="logo_path" name="logo_path" placeholder="img/min_logga.png">
+                        </div>
+                         <div>
+                            <label for="f_skatt_text">Text för F-skatt (visas på PDF):</label>
+                            <input type="text" id="f_skatt_text" name="f_skatt_text" placeholder="T.ex. Godkänd för F-skatt">
+                        </div>
+                        <div>
+                            <label for="signature_text">Signaturtext (visas på PDF):</label>
+                            <input type="text" id="signature_text" name="signature_text" placeholder="T.ex. Med vänliga hälsningar, Ditt Namn">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <button type="submit">Spara Profil</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Mitt Offertprogram</p>
+        <div style="margin-top: 10px;">
+            <button type="button" id="backupDbBtn">Ta backup på databas</button>
+        </div>
+    </footer>
+
+    <script src="js/profil.js"></script>
+    <script>
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async (event) => {
+                event.preventDefault();
+                try {
+                    const response = await fetch('/logout', { 
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.redirectUrl) {
+                        window.location.href = result.redirectUrl;
+                    } else {
+                        alert(result.error || 'Kunde inte logga ut. Försök igen.');
+                    }
+                } catch (error) {
+                    console.error('Utloggningsfel:', error);
+                    alert('Ett fel uppstod vid utloggning. Försök igen.');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

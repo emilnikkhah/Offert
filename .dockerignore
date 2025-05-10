@@ -1,0 +1,19 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+README.md
+# Kommentarer:
+# Ignorera node_modules eftersom de installeras i Docker-imagen.
+# Ignorera Docker-relaterade filer.
+# Ignorera Git-katalogen.
+# Ignorera eventuella lokala loggfiler.
+# Ignorera README-filer som inte behövs i produktionsimagen.
+# Lägg till andra filer/kataloger som inte ska inkluderas i Docker-imagen,
+# t.ex. lokala utvecklingskonfigurationer, testdata som inte behövs i produktion etc.
+# Exempel:
+# .env
+db/*.sqlite # Ignorera SQLite-databasfiler i db-katalogen
+# /Offerter/ # Om denna katalog innehåller temporära filer eller liknande

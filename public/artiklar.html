@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artikelregister - Offertprogram</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <img src="img/logo.png" alt="Företagslogotyp" id="headerLogo">
+
+        <nav>
+            <a href="index.html" style="margin-right: 15px; color: #ecf0f1;">Offerter</a>
+            <a href="kunder.html" style="margin-right: 15px; color: #ecf0f1;">Kunder</a>
+            <a href="artiklar.html" style="margin-right: 15px; color: #ecf0f1;">Artiklar</a>
+            <a href="profil.html" style="color: #ecf0f1; margin-right: 15px;">Profil</a>
+            <a href="#" id="logoutBtn" style="color: #ecf0f1;">Logga ut</a>
+        </nav>
+    </header>
+    
+    <main>
+        <section id="artikelhantering">
+            <h2>Artikelregister</h2>
+
+            <button type="button" id="showAddArticleFormBtn" style="margin-bottom: 20px;">Lägg till ny artikel</button>
+
+            <form id="addArticleForm" style="display: none;">
+                <h3 id="articleFormTitle">Lägg till ny artikel</h3>
+
+                <div class="form-section-group">
+                    <div class="form-grid two-columns">
+                        <div>
+                            <label for="article_number">Artikelnummer:</label>
+                            <input type="text" id="article_number" name="article_number">
+                        </div>
+                        <div>
+                            <label for="article_name">Benämning/Namn:</label>
+                            <input type="text" id="article_name" name="name" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section-group">
+                    <div class="form-grid two-columns">
+                        <div>
+                            <label for="article_unit">Enhet (t.ex. st, tim):</label>
+                            <input type="text" id="article_unit" name="unit">
+                        </div>
+                        <div>
+                            <label for="article_price">Pris (exkl. moms):</label>
+                            <input type="number" id="article_price" name="default_price_excl_vat" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section-group">
+                    <div>
+                        <label for="article_notes">Interna anteckningar:</label>
+                        <textarea id="article_notes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <button type="submit">Spara artikel</button>
+                    <button type="button" id="cancelArticleEditBtn" style="margin-left: 10px; background-color: #7f8c8d; display:none;">Avbryt</button>
+                </div>
+            </form>
+
+            <hr id="articleFormListSeparator" style="display: none;">
+
+            <div id="articleListContainer">
+                <h3>Befintliga artiklar</h3>
+                <!-- Här kan vi senare lägga till ett sökfält/filter om så önskas -->
+
+                <div class="article-list-header"> <!-- NYTT: Rubrikrad för listan -->
+                    <div class="article-header-cell number">Art.nr</div>
+                    <div class="article-header-cell name">Benämning</div>
+                    <div class="article-header-cell unit">Enhet</div>
+                    <div class="article-header-cell price">Pris (exkl. moms)</div>
+                    <div class="article-header-cell notes">Anteckningar</div>
+                    <div class="article-header-cell actions">Åtgärder</div>
+                </div>
+                <div id="articleList"> <!-- Ändrad från <ul id="articleList"> -->
+                    <!-- Artikeldata kommer att renderas här av artiklar.js -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Mitt Offertprogram</p>
+        <div style="margin-top: 10px;">
+            <button type="button" id="backupDbBtn">Ta backup på databas</button>
+        </div>
+    </footer>
+
+    <script src="js/artiklar.js"></script>
+    <script>
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async (event) => {
+                event.preventDefault();
+                try {
+                    const response = await fetch('/logout', { 
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.redirectUrl) {
+                        window.location.href = result.redirectUrl;
+                    } else {
+                        alert(result.error || 'Kunde inte logga ut. Försök igen.');
+                    }
+                } catch (error) {
+                    console.error('Utloggningsfel:', error);
+                    alert('Ett fel uppstod vid utloggning. Försök igen.');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

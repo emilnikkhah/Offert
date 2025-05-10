@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logga in - Offertprogram</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f7f9; /* Samma som main body i style.css */
+            margin: 0;
+            padding: 20px; /* Lite padding för små skärmar */
+            box-sizing: border-box;
+        }
+        .login-container {
+            background-color: #ffffff;
+            padding: 2rem 2.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+            width: 100%;
+            max-width: 420px; /* Lite bredare för bättre utseende */
+        }
+        .login-container .logo-container {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .login-container .logo-container img {
+            max-height: 60px;
+            width: auto;
+        }
+        .login-container h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem; /* Matchar header h1 */
+        }
+        .login-container .form-group {
+            margin-bottom: 1.2rem;
+        }
+        .login-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #444;
+            font-size: 0.9em;
+        }
+        .login-container input[type="text"],
+        .login-container input[type="password"] {
+            width: 100%;
+            /* Använder globala stilar för input, men kan behöva anpassas om de inte ärver padding etc. */
+        }
+        .login-container button[type="submit"] {
+            width: 100%;
+            padding: 12px 18px; /* Lite större inloggningsknapp */
+            font-size: 1em;
+        }
+        .error-message {
+            color: #c0392b; /* Mörkare röd */
+            background-color: #fdecea;
+            border: 1px solid #e74c3c;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 1.2rem;
+            text-align: center;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-container">
+            <img src="img/logo.png" alt="Företagslogotyp" id="headerLogo"> <!-- Samma ID som i header för konsistens -->
+        </div>
+        <h1>Logga in</h1>
+        <div id="errorMessage" class="error-message" style="display:none;"></div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Användarnamn:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Lösenord:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Logga in</button>
+        </form>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const errorMessageDiv = document.getElementById('errorMessage');
+
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            errorMessageDiv.style.display = 'none';
+            errorMessageDiv.textContent = '';
+
+            const formData = new FormData(loginForm);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (response.ok && result.redirectUrl) {
+                    window.location.href = result.redirectUrl;
+                } else {
+                    errorMessageDiv.textContent = result.error || 'Felaktigt användarnamn eller lösenord.';
+                    errorMessageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Inloggningsfel:', error);
+                errorMessageDiv.textContent = 'Ett oväntat fel uppstod. Försök igen.';
+                errorMessageDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
