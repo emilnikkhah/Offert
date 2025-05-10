@@ -1,0 +1,21 @@
+# Git version control system files
+.git
+.gitignore
+
+# Node.js dependencies - these are installed via Dockerfile
+node_modules/
+npm-debug.log
+
+# Docker specific files that shouldn't be in the image
+Dockerfile
+.dockerignore
+
+# macOS specific files
+.DS_Store
+
+# Any local environment files if you use them (e.g., .env)
+.env
+
+# READMEs or other documentation not needed in the image
+README.md
+DOCKER_DEPLOYMENT.md

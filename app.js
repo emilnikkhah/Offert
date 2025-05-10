@@ -679,7 +679,15 @@ app.get('/api/offerter/:id/pdf', isAuthenticated, async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servern körs på http://localhost:${PORT}`);
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+
+app.listen(PORT, HOST, () => {
+  console.log(`Servern körs på http://${HOST}:${PORT}`);
+  if (HOST === '0.0.0.0') {
+    console.log(`Tillgänglig externt (t.ex. via serverns IP-adress eller domännamn).`);
+  } else {
+    console.log(`Endast tillgänglig lokalt.`);
+  }
+  console.log(`NODE_ENV är satt till: ${process.env.NODE_ENV || 'development (default)'}`);
   console.log(`OBS: För produktion, se till att NODE_ENV=production och att SESSION_SECRET är satt till en stark, unik nyckel.`);
 });
