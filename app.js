@@ -6,8 +6,22 @@ const puppeteer = require('puppeteer');
 const Handlebars = require('handlebars');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
-
+const Redis = require('ioredis');
+const connectRedis = require('connect-redis');
 const app = express();
+
+const redisClient = new Redis(process.env.REDIS_URL || process.env.REDIS_PORT || 6379, process.env.REDIS_HOST || 'localhost');
+
+redisClient.on('connect', () => {
+    console.log('Connected to Redis');
+});
+
+redisClient.on('error', (err) => {
+    console.error('Redis error:', err);
+});
+
+const RedisStore = connectRedis(session);
+
 const PORT = process.env.PORT || 3000;
 
 const dbDirectory = path.join(__dirname, 'db');
@@ -140,11 +154,14 @@ if (sessionSecret === 'byt_mig_omgaende_till_en_stark_hemlighet' && process.env.
 app.use(session({
     secret: sessionSecret,
     resave: false,
-    saveUninitialized: false, 
+    saveUninitialized: false,
+     store: new RedisStore({
+        client: redisClient
+      }),
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
