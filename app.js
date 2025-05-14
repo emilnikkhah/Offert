@@ -6,22 +6,15 @@ const puppeteer = require('puppeteer');
 const Handlebars = require('handlebars');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
-const Redis = require('ioredis');
-const connectRedis = require('connect-redis');
+// Comment out Redis-related code for local development
+// const Redis = require('ioredis');
+// const connectRedis = require('connect-redis');
+// const redisClient = new Redis(process.env.REDIS_URL || process.env.REDIS_PORT || 6379, process.env.REDIS_HOST || 'localhost');
+// const RedisStore = connectRedis(session);
+
 const app = express();
 
-const redisClient = new Redis(process.env.REDIS_URL || process.env.REDIS_PORT || 6379, process.env.REDIS_HOST || 'localhost');
-
-redisClient.on('connect', () => {
-    console.log('Connected to Redis');
-});
-
-redisClient.on('error', (err) => {
-    console.error('Redis error:', err);
-});
-
-const RedisStore = connectRedis(session);
-
+// Use default in-memory session store for local development
 const PORT = process.env.PORT || 3000;
 
 const dbDirectory = path.join(__dirname, 'db');
@@ -155,9 +148,7 @@ app.use(session({
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
-     store: new RedisStore({
-        client: redisClient
-      }),
+    // store: new RedisStore({ client: redisClient }), // Disabled for local dev
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
@@ -273,23 +264,36 @@ app.get('/api/db-backup', isAuthenticated, (req, res) => {
   const timestamp = `${year}${month}${day}_${hours}${minutes}${seconds}`;
   const backupFileName = `offert_db_backup_${timestamp}.sqlite`;
   const backupFilePath = path.join(dbDirectory, backupFileName);
-  
-  const backupDb = new sqlite3.Database(backupFilePath);
-  db.backup(backupDb)
-    .then(() => {
-      backupDb.close();
-      console.log(`Databas-backup skapad: ${backupFileName} av användare ${req.session.username}`);
-      res.download(backupFilePath, backupFileName, (downloadErr) => {
-        if (downloadErr) {
-          console.error('Fel vid nedladdning av backupfil:', downloadErr);
-        }
-      });
-    })
-    .catch((err) => {
-      backupDb.close();
-      console.error('Fel vid SQLite backup-process:', err);
-      res.status(500).send('Kunde inte skapa backup av databasen.');
+
+  // Stäng databasanslutningen tillfälligt för att säkerställa att filen kan kopieras
+  db.serialize(() => {
+    db.run('BEGIN IMMEDIATE', (beginErr) => {
+      if (beginErr) {
+        console.error('Kunde inte låsa databasen för backup:', beginErr);
+        return res.status(500).send('Kunde inte låsa databasen för backup.');
+      }
+      try {
+        fs.copyFileSync(dbPath, backupFilePath);
+        db.run('COMMIT', (commitErr) => {
+          if (commitErr) {
+            console.error('Fel vid commit efter backup:', commitErr);
+          }
+          console.log(`Databas-backup skapad: ${backupFileName} av användare ${req.session.username}`);
+          res.download(backupFilePath, backupFileName, (downloadErr) => {
+            if (downloadErr) {
+              console.error('Fel vid nedladdning av backupfil:', downloadErr);
+            }
+            // Ta bort backupfilen efter nedladdning
+            fs.unlink(backupFilePath, () => {});
+          });
+        });
+      } catch (err) {
+        db.run('ROLLBACK', () => {});
+        console.error('Fel vid kopiering av SQLite-fil:', err);
+        res.status(500).send('Kunde inte skapa backup av databasen.');
+      }
     });
+  });
 });
 
 app.get('/api/foretagsprofil', isAuthenticated, (req, res) => {
@@ -540,12 +544,155 @@ app.delete('/api/artiklar/:id', isAuthenticated, (req, res) => {
     });
 });
 
-app.get('/api/offerter/next-number', isAuthenticated, (req, res) => { /* Befintlig kod */ });
-app.post('/api/offerter', isAuthenticated, (req, res) => { /* Befintlig kod */ });
-app.put('/api/offerter/:id', isAuthenticated, (req, res) => { /* Befintlig kod */ });
-app.put('/api/offerter/:id/status', isAuthenticated, (req, res) => { /* Befintlig kod */ });
-app.get('/api/offerter', isAuthenticated, (req, res) => { /* Befintlig kod */ });
-app.get('/api/offerter/:id', isAuthenticated, (req, res) => { /* Befintlig kod */ });
+// Hämta nästa lediga offertnummer
+app.get('/api/offerter/next-number', isAuthenticated, (req, res) => {
+    db.get("SELECT quote_number FROM Offerter ORDER BY id DESC LIMIT 1", [], (err, row) => {
+        if (err) {
+            console.error('Fel vid hämtning av senaste offertnummer:', err.message);
+            return res.status(500).json({ error: 'Kunde inte hämta offertnummer.' });
+        }
+        let nextNum = 1;
+        if (row && row.quote_number) {
+            // Försök tolka numret som ett heltal, annars öka sista siffran
+            const match = row.quote_number.match(/(\d+)$/);
+            if (match) {
+                nextNum = parseInt(match[1], 10) + 1;
+            }
+        }
+        const nextQuoteNumber = `Offert-${String(nextNum).padStart(4, '0')}`;
+        res.json({ next_quote_number: nextQuoteNumber });
+    });
+});
+
+// Skapa ny offert
+app.post('/api/offerter', isAuthenticated, (req, res) => {
+    let { quote_number, customer_id, production_name, quote_date, valid_until_date, status, total_amount_excl_vat, vat_percentage, total_amount_incl_vat, payment_terms, delivery_terms, internal_notes, items } = req.body;
+    // Om inget offertnummer skickas in, generera ett nytt
+    function insertOffer(quoteNumberToUse) {
+        const sql = `INSERT INTO Offerter (quote_number, customer_id, production_name, quote_date, valid_until_date, status, total_amount_excl_vat, vat_percentage, total_amount_incl_vat, payment_terms, delivery_terms, internal_notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const params = [quoteNumberToUse, customer_id, production_name, quote_date, valid_until_date, status, total_amount_excl_vat, vat_percentage, total_amount_incl_vat, payment_terms, delivery_terms, internal_notes];
+        db.run(sql, params, function(err) {
+            if (err) {
+                console.error('Fel vid skapande av offert:', err.message);
+                return res.status(500).json({ error: 'Kunde inte skapa offert.' });
+            }
+            const offerId = this.lastID;
+            // Spara offertrader (rader)
+            if (Array.isArray(items) && items.length > 0) {
+                const stmt = db.prepare(`INSERT INTO Offertrader (quote_id, article_id, description, quantity, unit, unit_price_excl_vat, discount_percentage, line_total_excl_vat) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+                items.forEach(item => {
+                    stmt.run(offerId, item.article_id || null, item.description, item.quantity, item.unit, item.unit_price_excl_vat, item.discount_percentage, item.line_total_excl_vat);
+                });
+                stmt.finalize();
+            }
+            res.status(201).json({ message: 'Offert skapad!', data: { id: offerId, quote_number: quoteNumberToUse } });
+        });
+    }
+    if (!quote_number || quote_number.trim() === '') {
+        db.get("SELECT quote_number FROM Offerter ORDER BY id DESC LIMIT 1", [], (err, row) => {
+            let nextNum = 1;
+            if (!err && row && row.quote_number) {
+                const match = row.quote_number.match(/(\d+)$/);
+                if (match) {
+                    nextNum = parseInt(match[1], 10) + 1;
+                }
+            }
+            const nextQuoteNumber = `Offert-${String(nextNum).padStart(4, '0')}`;
+            insertOffer(nextQuoteNumber);
+        });
+    } else {
+        insertOffer(quote_number);
+    }
+});
+app.put('/api/offerter/:id', isAuthenticated, (req, res) => {
+    const { id } = req.params;
+    let { customer_id, production_name, quote_date, valid_until_date, status, total_amount_excl_vat, vat_percentage, total_amount_incl_vat, payment_terms, delivery_terms, internal_notes, items } = req.body;
+    const sql = `UPDATE Offerter SET 
+                    customer_id = ?, production_name = ?, quote_date = ?, valid_until_date = ?, 
+                    status = ?, total_amount_excl_vat = ?, vat_percentage = ?, total_amount_incl_vat = ?, 
+                    payment_terms = ?, delivery_terms = ?, internal_notes = ?, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = ?`;
+    db.run(sql, [customer_id, production_name, quote_date, valid_until_date, status, total_amount_excl_vat, vat_percentage, total_amount_incl_vat, payment_terms, delivery_terms, internal_notes, id], function(err) {
+        if (err) {
+            console.error("Fel vid uppdatering av offert: ", err.message);
+            return res.status(500).json({ error: "Databasfel vid uppdatering av offert." });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: "Offert att uppdatera hittades inte." });
+        }
+        // Uppdatera offertrader (rader)
+        if (Array.isArray(items)) {
+            const deleteStmt = db.prepare("DELETE FROM Offertrader WHERE quote_id = ?");
+            deleteStmt.run(id);
+            deleteStmt.finalize();
+            
+            const stmt = db.prepare(`INSERT INTO Offertrader (quote_id, article_id, description, quantity, unit, unit_price_excl_vat, discount_percentage, line_total_excl_vat) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+            items.forEach(item => {
+                stmt.run(id, item.article_id || null, item.description, item.quantity, item.unit, item.unit_price_excl_vat, item.discount_percentage, item.line_total_excl_vat);
+            });
+            stmt.finalize();
+        }
+        res.json({ message: "Offert uppdaterad!", data: { id: id, ...req.body } });
+    });
+});
+app.put('/api/offerter/:id/status', isAuthenticated, (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const sql = `UPDATE Offerter SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+    db.run(sql, [status, id], function(err) {
+        if (err) {
+            console.error("Fel vid uppdatering av offertstatus: ", err.message);
+            return res.status(500).json({ error: "Databasfel vid uppdatering av offertstatus." });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: "Offert att uppdatera hittades inte." });
+        }
+        res.json({ message: "Offertstatus uppdaterad!", data: { id: id, status: status } });
+    });
+});
+app.get('/api/offerter', isAuthenticated, (req, res) => {
+  const sql = `
+    SELECT o.*, k.company_name AS customer_company_name, k.contact_person AS customer_contact_person
+    FROM Offerter o
+    LEFT JOIN Kunder k ON o.customer_id = k.id
+    ORDER BY o.id DESC
+  `;
+  db.all(sql, [], (err, rows) => {
+    if (err) {
+      console.error("Fel vid hämtning av offerter: ", err.message);
+      return res.status(500).json({ error: "Databasfel vid hämtning av offerter." });
+    }
+    res.json({ message: "Offerter hämtade", data: rows });
+  });
+});
+app.get('/api/offerter/:id', isAuthenticated, (req, res) => {
+    const { id } = req.params;
+    const sql = `
+        SELECT o.*, k.company_name AS customer_company_name, k.contact_person AS customer_contact_person,
+               k.address AS customer_address, k.postal_code AS customer_postal_code, k.city AS customer_city
+        FROM Offerter o
+        LEFT JOIN Kunder k ON o.customer_id = k.id
+        WHERE o.id = ?
+    `;
+    db.get(sql, [id], (err, row) => {
+        if (err) {
+            console.error("Fel vid hämtning av specifik offert: ", err.message);
+            return res.status(500).json({ error: "Databasfel vid hämtning av offert." });
+        }
+        if (!row) {
+            return res.status(404).json({ error: "Offert hittades inte." });
+        }
+        const itemsSql = "SELECT * FROM Offertrader WHERE quote_id = ? ORDER BY id ASC";
+        db.all(itemsSql, [id], (err, rows) => {
+            if (err) {
+                console.error("Fel vid hämtning av offertrader för offert: ", err.message);
+                return res.status(500).json({ error: "Databasfel vid hämtning av offertrader." });
+            }
+            row.items = rows || [];
+            res.json({ message: "Offert hämtad", data: row });
+        });
+    });
+});
 
 app.get('/api/offerter/:id/preview', isAuthenticated, async (req, res) => {
     const quoteId = req.params.id;
