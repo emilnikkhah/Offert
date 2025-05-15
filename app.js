@@ -1,3 +1,5 @@
+require('dotenv').config();
+// ...existing code...
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -150,7 +152,7 @@ app.use(session({
     saveUninitialized: false,
     // store: new RedisStore({ client: redisClient }), // Disabled for local dev
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.FORCE_SESSION_SECURE === 'true' || (process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true'),
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000
     }
