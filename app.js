@@ -146,7 +146,6 @@ const sessionSecret = process.env.SESSION_SECRET || 'byt_mig_omgaende_till_en_st
 if (sessionSecret === 'byt_mig_omgaende_till_en_stark_hemlighet' && process.env.NODE_ENV === 'production') {
     console.warn('VARNING: Ingen säker SESSION_SECRET är satt för produktion!');
 }
-
 app.use(session({
     secret: sessionSecret,
     resave: false,
