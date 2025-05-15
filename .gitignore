@@ -4,4 +4,23 @@ node_modules/
 # macOS specific files
 .DS_Store
 
-db/*
+# Lokala databaser och backup
+/db/*
+
+# Miljövariabler
+.env
+
+# Loggar och temporära filer
+*.log
+temp/
+
+# Build-mappar
+build/
+dist/
+
+# Editorfiler
+.vscode/
+.idea/
+
+# Bun lockfile (om du inte vill ha den i repo)
+bun.lock
