@@ -146,13 +146,15 @@ const sessionSecret = process.env.SESSION_SECRET || 'byt_mig_omgaende_till_en_st
 if (sessionSecret === 'byt_mig_omgaende_till_en_stark_hemlighet' && process.env.NODE_ENV === 'production') {
     console.warn('VARNING: Ingen säker SESSION_SECRET är satt för produktion!');
 }
+
 app.use(session({
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     // store: new RedisStore({ client: redisClient }), // Disabled for local dev
     cookie: {
-        secure: process.env.FORCE_SESSION_SECURE === 'true' || (process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true'),
+        secure: process.env.FORCE_SESSION_SECURE === 'true' || 
+                (process.env.NODE_ENV === 'production' && process.env.USE_HTTPS === 'true'),
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000
     }
