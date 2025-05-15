@@ -9,6 +9,74 @@ body {
     font-size: 16px;
 }
 
+/* --- MODERNISERING & FÖRBÄTTRINGAR 2025 --- */
+
+header {
+    /* Sticky header med gradient */
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(90deg, #2c3e50 60%, #3498db 100%);
+    box-shadow: 0 4px 16px rgba(44,62,80,0.10);
+    border-bottom-left-radius: 0.7rem;
+    border-bottom-right-radius: 0.7rem;
+    transition: box-shadow 0.2s;
+}
+
+header:hover {
+    box-shadow: 0 8px 24px rgba(44,62,80,0.18);
+}
+
+header nav a {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    border-radius: 4px 4px 0 0;
+    padding: 6px 12px 4px 12px;
+    transition: background 0.18s, color 0.18s, border-color 0.2s;
+}
+header nav a:hover, header nav a.active-nav {
+    background: rgba(255,255,255,0.10);
+    color: #fff;
+    border-bottom-color: #fff;
+}
+
+main {
+    animation: fadein 0.7s cubic-bezier(.4,0,.2,1);
+}
+@keyframes fadein {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: none; }
+}
+
+section {
+    box-shadow: 0 6px 24px rgba(44,62,80,0.10);
+    transition: box-shadow 0.2s;
+}
+section:hover {
+    box-shadow: 0 12px 32px rgba(44,62,80,0.13);
+}
+
+button, input[type="submit"] {
+    box-shadow: 0 2px 8px rgba(52,152,219,0.10);
+    transition: background 0.2s, transform 0.08s, box-shadow 0.18s;
+    will-change: transform;
+}
+button:active, input[type="submit"]:active {
+    transform: scale(0.97);
+    box-shadow: 0 1px 2px rgba(52,152,219,0.08);
+}
+
+input, select, textarea {
+    background: #f8fafc;
+    border-radius: 7px;
+    border: 1.5px solid #e0e6ed;
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52,152,219,0.13);
+}
+
 /* Header ... */
 header {
     background-color: #2c3e50; 
@@ -447,6 +515,10 @@ ul:not(#quoteList) li {
 }
 
 footer {
+    background: linear-gradient(90deg, #34495e 60%, #2980b9 100%);
+    border-top-left-radius: 0.7rem;
+    border-top-right-radius: 0.7rem;
+    box-shadow: 0 -2px 12px rgba(44,62,80,0.10);
     text-align: center;
     padding: 2rem 1.5rem;
     background-color: #34495e;
@@ -680,4 +752,72 @@ hr {
     padding: 20px;
     text-align: center;
     color: #777;
+}
+
+/* Fade-in på alla sektioner */
+section {
+    animation: fadein 0.8s cubic-bezier(.4,0,.2,1);
+}
+
+/* Extra: micro-interaction på filterfält */
+#quoteFilters input:focus, #quoteFilters select:focus {
+    box-shadow: 0 0 0 2px #3498db33;
+    border-color: #3498db;
+}
+
+/* Extra: kort-liknande filter på mobil */
+@media (max-width: 600px) {
+    #quoteFilters {
+        box-shadow: 0 2px 8px rgba(44,62,80,0.10);
+        border-radius: 10px;
+    }
+}
+
+/* Responsivitet */
+@media (max-width: 800px) {
+    main {
+        padding: 0 0.5rem;
+    }
+    section {
+        padding: 1rem;
+    }
+    .quote-list-header, .quote-list-item {
+        font-size: 0.95em;
+        gap: 4px;
+    }
+}
+@media (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.7rem 0.7rem 0.5rem 0.7rem;
+    }
+    #headerLogo {
+        margin-bottom: 0.5rem;
+    }
+    header nav {
+        margin-left: 0;
+        width: 100%;
+    }
+    header nav a {
+        display: inline-block;
+        margin: 0 6px 4px 0;
+        font-size: 0.98em;
+    }
+    section {
+        padding: 0.7rem;
+    }
+    .form-grid, .form-section-group {
+        grid-template-columns: 1fr !important;
+    }
+    .quote-list-header, .quote-list-item {
+        grid-template-columns: 1fr 1fr;
+        min-width: 0;
+        font-size: 0.93em;
+    }
+    #quoteFilters {
+        flex-direction: column;
+        gap: 0.7rem;
+        padding: 0.7rem 0.5rem;
+    }
 }

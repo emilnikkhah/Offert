@@ -4,71 +4,116 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logga in - Offertprogram</title>
-    <link rel="stylesheet" href="css/style.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
+            font-family: 'Inter', Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background-color: #f4f7f9; /* Samma som main body i style.css */
+            background: #f6f8fa;
             margin: 0;
-            padding: 20px; /* Lite padding för små skärmar */
+            padding: 20px;
             box-sizing: border-box;
         }
         .login-container {
-            background-color: #ffffff;
-            padding: 2rem 2.5rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border: 1px solid #e0e0e0;
+            background: #fff;
+            padding: 2.5rem 2.5rem 2rem 2.5rem;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(37,99,235,0.13);
+            border: none;
             width: 100%;
-            max-width: 420px; /* Lite bredare för bättre utseende */
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .login-container .logo-container {
+        .logo-container {
             text-align: center;
             margin-bottom: 1.5rem;
         }
-        .login-container .logo-container img {
-            max-height: 60px;
+        .logo-container img {
+            max-height: 56px;
             width: auto;
         }
-        .login-container h1 {
+        h1 {
             text-align: center;
-            color: #2c3e50;
+            color: #2563eb;
             margin-top: 0;
             margin-bottom: 1.5rem;
-            font-size: 1.8rem; /* Matchar header h1 */
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -1px;
         }
-        .login-container .form-group {
+        .form-group {
             margin-bottom: 1.2rem;
+            width: 100%;
         }
-        .login-container label {
+        .form-actions {
+            width: 100%;
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+        label {
             display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #444;
-            font-size: 0.9em;
-        }
-        .login-container input[type="text"],
-        .login-container input[type="password"] {
-            width: 100%;
-            /* Använder globala stilar för input, men kan behöva anpassas om de inte ärver padding etc. */
-        }
-        .login-container button[type="submit"] {
-            width: 100%;
-            padding: 12px 18px; /* Lite större inloggningsknapp */
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+            color: #2563eb;
             font-size: 1em;
         }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #f9fafb;
+            transition: border 0.2s;
+            font-family: inherit;
+        }
+        input[type="text"]:focus, input[type="password"]:focus {
+            border: 1.5px solid #2563eb;
+            outline: none;
+            background: #e0e7ef;
+        }
+        button[type="submit"] {
+            width: 100%;
+            max-width: 220px;
+            display: block;
+            margin: 0 auto;
+            padding: 0.85rem 0;
+            font-size: 1.1em;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button[type="submit"]:hover {
+            background: #1e40af;
+        }
         .error-message {
-            color: #c0392b; /* Mörkare röd */
-            background-color: #fdecea;
+            color: #c0392b;
+            background: #fdecea;
             border: 1px solid #e74c3c;
             padding: 12px;
-            border-radius: 5px;
+            border-radius: 7px;
             margin-bottom: 1.2rem;
             text-align: center;
-            font-size: 0.9em;
+            font-size: 0.98em;
+            width: 100%;
+        }
+        @media (max-width: 500px) {
+            .login-container {
+                padding: 1.2rem 0.5rem 1.2rem 0.5rem;
+                max-width: 98vw;
+            }
         }
     </style>
 </head>
@@ -88,7 +133,9 @@
                 <label for="password">Lösenord:</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit">Logga in</button>
+            <div class="form-actions">
+                <button type="submit">Logga in</button>
+            </div>
         </form>
     </div>
 
